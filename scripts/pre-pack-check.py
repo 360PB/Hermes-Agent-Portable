@@ -343,9 +343,38 @@ def check_git_submodules() -> None:
         warn(f"子模块状态检查异常: {e}")
 
 
+def check_dashboard_source_fix() -> None:
+    """8. Dashboard 源码修复检查"""
+    section("8. Dashboard 源码修复检查")
+    root = _root()
+    main_py = root / "hermes-agent" / "hermes_cli" / "main.py"
+
+    if not main_py.exists():
+        warn("`main.py` 不存在，跳过源码检查")
+        return
+
+    content = main_py.read_text(encoding="utf-8")
+
+    # 检查 cmd_dashboard 中是否包含 web_dist 跳过逻辑
+    has_web_dist_check = "web_dist" in content and "web_dist.exists()" in content
+    has_skip_comment = "Skip build if web_dist" in content
+
+    if has_web_dist_check and has_skip_comment:
+        ok("`cmd_dashboard` 已包含 web_dist 存在性检查，新电脑无需 npm")
+    else:
+        fail("`cmd_dashboard` 缺少 web_dist 存在性检查！")
+        info("  这会导致新电脑运行 `hermes ui.bat` 时报错:")
+        info('    "Web UI frontend not built and npm is not available."')
+        info("  修复方法: 在 `cmd_dashboard` 中添加:")
+        info("    web_dist = PROJECT_ROOT / 'hermes_cli' / 'web_dist'")
+        info("    if not (web_dist.exists() and (web_dist / 'index.html').exists()):")
+        info("        if not _build_web_ui(PROJECT_ROOT / 'web', fatal=True):")
+        info("            sys.exit(1)")
+
+
 def check_no_backup_dirs() -> None:
-    """8. 清理残留备份目录"""
-    section("8. 残留文件检查")
+    """9. 清理残留备份目录"""
+    section("9. 残留文件检查")
     root = _root()
 
     suspicious = list(root.glob("*.backup*")) + list(root.glob("*.bak*"))
@@ -395,6 +424,7 @@ def main() -> int:
     check_hermes_cli_import()
     check_dashboard_web_dist(fix=args.fix)
     check_git_submodules()
+    check_dashboard_source_fix()
     check_no_backup_dirs()
 
     total = CHECKS_PASSED + CHECKS_FAILED + CHECKS_WARN
