@@ -3,6 +3,10 @@
 > **Windows 便携整合包** —— 解压即用，无需安装 Python / uv / 任何系统级依赖。
 >
 > 内置 [Hermes Agent](https://github.com/nousresearch/hermes-agent) CLI + [Hermes WebUI](https://github.com/nesquena/hermes-webui)，支持一键同步上游最新源码。
+>
+> ##### 整合包下载
+>
+> 链接：https://pan.quark.cn/s/34d70bcb9b01
 
 ---
 
