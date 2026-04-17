@@ -41,24 +41,29 @@
 D:\Hermes\Hermes-Agent-Portable\
 ```
 
-### 2. 配置 API Key
+### 2. 启动
 
-在 `%USERPROFILE%\.hermes\.env` 中写入：
-```env
-KIMI_API_KEY=your-api-key-here
-# 或其他你使用的提供商 key
-```
+#### 方式一：先配置，再对话（推荐）
 
-### 3. 启动
+| 步骤 | 操作 | 说明 |
+|------|------|------|
+| ① | 双击 `hermes ui.bat` | 打开 **仪表盘**，配置模型、API Key、消息平台 |
+| ② | 双击 `start-webui.bat` | 启动 **WebUI**，开始对话 |
+
+#### 方式二：跳过配置，直接对话
+
+| 操作 | 说明 |
+|------|------|
+| 双击 `start-webui.bat` | 直接启动 WebUI，使用默认配置对话 |
+
+> WebUI 默认地址：`http://127.0.0.1:8787`
+
+#### 其他入口
 
 | 功能 | 操作 |
 |------|------|
-| 启动 CLI 聊天 | 双击 `start-hermes.bat` |
-| 启动 Web UI | 双击 `start-webui.bat`（自动打开浏览器） |
+| 命令行聊天 | 双击 `start-hermes.bat` |
 | 快速测试 | 双击 `test-hermes.bat` |
-| 打开仪表盘 | 双击 `hermes ui.bat` |
-
-WebUI 默认地址：`http://127.0.0.1:8787`
 
 ---
 
