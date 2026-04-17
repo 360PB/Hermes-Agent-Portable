@@ -1,0 +1,37 @@
+# === Hermes-Agent-Portable .gitignore ===
+
+# Python environments / cache
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# User local config
+.env
+.env.local
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup dirs created during migration
+*.backup/
+*.bak/
+
+# Large runtime dirs (not versioned)
+python_runtime/
+tools/
+
+# Logs
+*.log
+logs/
