@@ -437,12 +437,23 @@ def main() -> int:
     if CHECKS_FAILED > 0:
         print(f"\n{RED}{BOLD}✗ 打包检查未通过，请修复上述问题后再打包！{RESET}")
         return 1
-    elif CHECKS_WARN > 0:
-        print(f"\n{YELLOW}{BOLD}⚠ 检查通过，但有警告项。建议确认后再打包。{RESET}")
-        return 0
-    else:
-        print(f"\n{GREEN}{BOLD}✓ 所有检查通过，可以安全打包！{RESET}")
-        return 0
+
+    # 检查通过，输出打包建议
+    print(f"\n{GREEN}{BOLD}✓ 检查通过！{RESET}")
+    if CHECKS_WARN > 0:
+        print(f"{YELLOW}{BOLD}⚠ 有 {CHECKS_WARN} 个警告项，建议确认后再打包。{RESET}")
+
+    print(f"\n{BOLD}{CYAN}=== 打包命令 ==={RESET}")
+    print(f"  一键打包:")
+    print(f"    python_runtime\\python.exe scripts\\pack.py")
+    print(f"")
+    print(f"  手动打包（排除 .git/ skills/ scripts/）:")
+    print(f"    7z a -t7z -mx=9 -xr!.git -xr!skills -xr!scripts Hermes-Agent-Portable-vX.Y.Z.7z Hermes-Agent-Portable\\")
+    print(f"")
+    print(f"  PowerShell 打包（无 7z 时，较慢）:")
+    print(f"    Compress-Archive -Path 'Hermes-Agent-Portable\\*' -DestinationPath 'Hermes-Agent-Portable-vX.Y.Z.zip' -Force")
+    print(f"    {YELLOW}注意: Compress-Archive 无法排除目录，会包含 skills/ 和 scripts/{RESET}")
+    return 0
 
 
 if __name__ == "__main__":

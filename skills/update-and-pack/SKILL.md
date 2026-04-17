@@ -161,20 +161,51 @@ Remove-Item -Recurse -Force *.bak* -ErrorAction SilentlyContinue
 
 ### 步骤 6：打包
 
+**一键打包（推荐）**：
+
+```powershell
+cd Hermes-Agent-Portable
+
+# 自动检测版本，7z 格式，排除 .git/ skills/ scripts/
+python_runtime\python.exe scripts\pack.py
+
+# 指定版本号
+python_runtime\python.exe scripts\pack.py --version 0.11.0
+
+# zip 格式
+python_runtime\python.exe scripts\pack.py --format zip
+
+# 仅检查，不打包
+python_runtime\python.exe scripts\pack.py --check-only
+```
+
+**手动打包**：
+
 ```powershell
 cd ..  # 到整合包父目录
 
 # 7z 压缩（推荐，体积更小）
-7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "-xr!.git" "Hermes-Agent-Portable-vX.Y.Z.7z" "Hermes-Agent-Portable\"
+# 排除: .git/ (Git 历史) skills/ (AI skill 文档) scripts/ (打包/检查脚本)
+7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "-xr!.git" "-xr!skills" "-xr!scripts" "Hermes-Agent-Portable-vX.Y.Z.7z" "Hermes-Agent-Portable\"
 
-# 或 zip 压缩（兼容性更好）
-7z a -tzip "-xr!.git" "Hermes-Agent-Portable-vX.Y.Z.zip" "Hermes-Agent-Portable\"
-
-# 或 PowerShell 原生压缩（无 7z 时备用）
-Compress-Archive -Path "Hermes-Agent-Portable\*" -DestinationPath "Hermes-Agent-Portable-vX.Y.Z.zip" -Force
+# zip 压缩（兼容性更好）
+7z a -tzip "-xr!.git" "-xr!skills" "-xr!scripts" "Hermes-Agent-Portable-vX.Y.Z.zip" "Hermes-Agent-Portable\"
 ```
 
-**建议**：优先使用 7z，压缩率更好。
+**注意**：`skills/` 和 `scripts/` 是给维护者/AI 使用的，用户不需要。打包时务必排除，可减小约 10 KB 体积并避免用户困惑。
+
+**PowerShell 原生压缩（无 7z 时备用）**：
+
+```powershell
+# Compress-Archive 不支持排除目录，会包含 skills/ 和 scripts/
+# 如需排除，先复制到临时目录再压缩
+$temp = New-TemporaryFile; $tempDir = "$temp-dir"
+robocopy "Hermes-Agent-Portable" "$tempDir\Hermes-Agent-Portable" /E /XD ".git" "skills" "scripts"
+Compress-Archive -Path "$tempDir\Hermes-Agent-Portable\*" -DestinationPath "Hermes-Agent-Portable-vX.Y.Z.zip" -Force
+Remove-Item -Recurse -Force $tempDir
+```
+
+**建议**：优先使用 `scripts/pack.py` 一键脚本，自动处理所有细节。
 
 ### 步骤 7：版本管理
 
@@ -287,7 +318,8 @@ if (-not $Version) {
     $Version = Read-Host "Enter version (e.g., 0.10.0)"
 }
 cd ..
-7z a -t7z -mx=9 "-xr!.git" "Hermes-Agent-Portable-v$Version.7z" "Hermes-Agent-Portable\"
+# 排除 .git/ skills/ scripts/ —— 用户不需要这些维护者文件
+7z a -t7z -mx=9 "-xr!.git" "-xr!skills" "-xr!scripts" "Hermes-Agent-Portable-v$Version.7z" "Hermes-Agent-Portable\"
 
 Write-Host "`n=== Done ===" -ForegroundColor Green
 ```
