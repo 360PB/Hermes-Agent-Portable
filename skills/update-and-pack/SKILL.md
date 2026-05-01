@@ -195,6 +195,23 @@ cd ..  # 到整合包父目录
 7z a -tzip "-xr!.git" "-xr!skills" "-xr!scripts" "Hermes-Agent-Portable-vX.Y.Z.zip" "Hermes-Agent-Portable\"
 ```
 
+**自解压 EXE 打包（Windows 用户友好）**：
+
+```powershell
+cd Hermes-Agent-Portable
+
+# 从现有 7z 直接生成自解压 exe（最快）
+python_runtime\python.exe scripts\pack-sfx.py --version 0.12
+
+# 重新压缩并生成自解压 exe
+python_runtime\python.exe scripts\pack-sfx.py --from-scratch
+
+# 指定输出目录
+python_runtime\python.exe scripts\pack-sfx.py -o D:\Release
+```
+
+生成的 `.exe` 双击即可运行，弹出 GUI 向导让用户选择解压路径，默认解压到 `%USERPROFILE%\Hermes-Agent-Portable`。
+
 **注意**：`skills/` 和 `scripts/` 是给维护者/AI 使用的，用户不需要。打包时务必排除，可减小约 10 KB 体积并避免用户困惑。
 
 **PowerShell 原生压缩（无 7z 时备用）**：
@@ -348,6 +365,8 @@ Write-Host "`n=== Done ===" -ForegroundColor Green
 | 文件 | 作用 |
 |------|------|
 | `scripts/pre-pack-check.py` | 打包前自动化检查 |
+| `scripts/pack.py` | 一键打包（7z/zip） |
+| `scripts/pack-sfx.py` | 自解压 EXE 打包 |
 | `update-upstream.ps1` | 同步上游子模块 |
 | `hermes-agent/hermes_cli/main.py` | Dashboard 启动逻辑 |
 | `hermes-agent/web/package.json` | 前端依赖 |
