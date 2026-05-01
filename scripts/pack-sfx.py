@@ -102,6 +102,7 @@ ExtractDialogWidth=480
 GUIMode="1"
 InstallPath="%USERPROFILE%\\Hermes-Agent-Portable"
 OverwriteMode="2"
+RunProgram="explorer.exe \"%T\""
 ;!@InstallEnd@!
 """
     config_path = output_path.parent / "_sfx_config.txt"
