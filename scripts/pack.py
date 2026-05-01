@@ -202,6 +202,7 @@ def main() -> int:
   python scripts/pack.py -v 0.11.0        # 指定版本
   python scripts/pack.py -f zip           # zip 格式
   python scripts/pack.py --check-only     # 仅检查，不打包
+  python scripts/pack.py --yes            # 自动确认版本号，无交互
 """,
     )
     parser.add_argument("-v", "--version", default="", help="版本号（默认从子模块自动检测）")
@@ -209,6 +210,7 @@ def main() -> int:
     parser.add_argument("-o", "--output", default="", help="输出目录（默认整合包同级目录）")
     parser.add_argument("--check-only", action="store_true", help="只运行检查，不打包")
     parser.add_argument("--skip-check", action="store_true", help="跳过打包前检查")
+    parser.add_argument("-y", "--yes", action="store_true", help="自动确认版本号，跳过交互提示")
     args = parser.parse_args()
 
     root = _root()
@@ -240,9 +242,12 @@ def main() -> int:
     if not version:
         version = get_version_from_submodules()
         print(f"{CYAN}自动检测到版本号: {version}{RESET}")
-        confirm = input(f"确认使用该版本号打包? [Y/n] ")
-        if confirm.lower() == "n":
-            version = input("请输入版本号: ").strip()
+        if args.yes:
+            print(f"{GREEN}自动确认（--yes）{RESET}")
+        else:
+            confirm = input(f"确认使用该版本号打包? [Y/n] ")
+            if confirm.lower() == "n":
+                version = input("请输入版本号: ").strip()
     else:
         print(f"指定版本号: {version}")
 

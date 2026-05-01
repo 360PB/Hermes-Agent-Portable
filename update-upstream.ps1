@@ -1,4 +1,4 @@
-# update-upstream.ps1
+﻿# update-upstream.ps1
 # Hermes-Agent-Portable 上游源码一键同步脚本
 # 用法: .\update-upstream.ps1 [-AgentBranch main] [-WebUIBranch main] [-SkipTests]
 

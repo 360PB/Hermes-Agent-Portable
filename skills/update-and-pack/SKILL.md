@@ -177,6 +177,9 @@ python_runtime\python.exe scripts\pack.py --format zip
 
 # 仅检查，不打包
 python_runtime\python.exe scripts\pack.py --check-only
+
+# 自动确认版本号，无交互（CI/自动化场景）
+python_runtime\python.exe scripts\pack.py --yes
 ```
 
 **手动打包**：
