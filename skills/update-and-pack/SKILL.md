@@ -230,7 +230,7 @@ python_runtime\python.exe scripts\pack-sfx.py --from-scratch
 python_runtime\python.exe scripts\pack-sfx.py -o D:\Release
 ```
 
-生成的 `.exe` 双击即可运行，弹出 GUI 向导让用户选择解压路径，默认解压到 `%USERPROFILE%\Hermes-Agent-Portable`。解压完成后**自动打开目标文件夹**（通过 `explorer.exe`），方便用户直接找到启动脚本。
+生成的 `.exe` 双击即可运行，弹出 GUI 向导让用户选择解压路径，默认解压到 `D:\Hermes-Agent-Portable`。解压完成后**自动打开目标文件夹**（通过 `explorer.exe`），方便用户直接找到启动脚本。
 
 **注意**：`skills/` 和 `scripts/` 是给维护者/AI 使用的，用户不需要。打包时务必排除，可减小约 10 KB 体积并避免用户困惑。
 
