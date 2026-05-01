@@ -1,0 +1,41 @@
+﻿diff --git a/hermes_cli/main.py b/hermes_cli/main.py
+index 21061038f..650de8ec8 100644
+--- a/hermes_cli/main.py
++++ b/hermes_cli/main.py
+@@ -5617,6 +5617,22 @@ def _update_via_zip(args):
+     # individually so update does not silently strip working capabilities.
+     print("鈫?Updating Python dependencies...")
+ 
++    # Windows: rename running entry-point scripts before reinstalling.
++    # A running EXE cannot be overwritten, but CAN be renamed. We rename
++    # the old copies to *.exe.old so pip/uv can create fresh ones.
++    _old_scripts: list[Path] = []
++    if sys.platform == "win32":
++        scripts_dir = PROJECT_ROOT / "venv" / "Scripts"
++        for script_name in ("hermes.exe", "hermes-agent.exe", "hermes-acp.exe"):
++            script_path = scripts_dir / script_name
++            if script_path.exists():
++                old_path = script_path.with_suffix(".exe.old")
++                try:
++                    script_path.rename(old_path)
++                    _old_scripts.append(old_path)
++                except OSError:
++                    pass
++
+     uv_bin = shutil.which("uv")
+     if uv_bin:
+         uv_env = {**os.environ, "VIRTUAL_ENV": str(PROJECT_ROOT / "venv")}
+@@ -5642,6 +5658,13 @@ def _update_via_zip(args):
+             )
+         _install_python_dependencies_with_optional_fallback(pip_cmd)
+ 
++    # Clean up renamed old scripts (may still be locked by running process)
++    for old_path in _old_scripts:
++        try:
++            old_path.unlink(missing_ok=True)
++        except OSError:
++            pass
++
+     _update_node_dependencies()
+     _build_web_ui(PROJECT_ROOT / "web")
+ 
