@@ -111,6 +111,8 @@ def pack_7z(version: str, output_dir: Path) -> Path:
         "-xr!.git",
         "-xr!skills",
         "-xr!scripts",
+        "-xr!update-hermes.bat",
+        "-xr!update-upstream.ps1",
         str(output_file),
         f"{root.name}\\",
     ]
@@ -138,6 +140,8 @@ def pack_zip(version: str, output_dir: Path) -> Path:
         "-xr!.git",
         "-xr!skills",
         "-xr!scripts",
+        "-xr!update-hermes.bat",
+        "-xr!update-upstream.ps1",
         str(output_file),
         f"{root.name}\\",
     ]
@@ -241,7 +245,7 @@ def main() -> int:
     print(f"{RESET}")
     print(f"整合包根目录: {root}")
     print(f"压缩格式: {args.format}")
-    print(f"排除项: .git/, skills/, scripts/")
+    print(f"排除项: .git/, skills/, scripts/, update-hermes.bat, update-upstream.ps1")
     print()
 
     # Step 1: 打包前检查
@@ -310,7 +314,7 @@ def main() -> int:
         print(f"  文件: {output_file}")
         print(f"  大小: {format_size(size)}")
         print(f"  格式: {args.format}")
-        print(f"  排除: .git/, skills/, scripts/")
+        print(f"  排除: .git/, skills/, scripts/, update-hermes.bat, update-upstream.ps1")
         return 0
 
     except Exception as e:

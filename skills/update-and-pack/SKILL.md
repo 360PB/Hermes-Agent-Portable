@@ -232,7 +232,15 @@ python_runtime\python.exe scripts\pack-sfx.py -o D:\Release
 
 生成的 `.exe` 双击即可运行，弹出 GUI 向导让用户选择解压路径，默认解压到 `D:\Hermes-Agent-Portable`。解压完成后**自动打开目标文件夹**（通过 `explorer.exe`），方便用户直接找到启动脚本。
 
-**注意**：`skills/` 和 `scripts/` 是给维护者/AI 使用的，用户不需要。打包时务必排除，可减小约 10 KB 体积并避免用户困惑。
+**注意**：以下文件/目录是给维护者/AI 使用的，用户不需要。打包时务必排除，可减小体积并避免用户困惑：
+
+| 排除项 | 原因 |
+|--------|------|
+| `.git/` | Git 历史，体积大 |
+| `skills/` | AI skill 文档，维护者专用 |
+| `scripts/` | 打包/检查脚本，用户不需要 |
+| `update-hermes.bat` | 更新脚本，便携包用户不需要同步上游 |
+| `update-upstream.ps1` | 更新脚本，同上 |
 
 **PowerShell 原生压缩（无 7z 时备用）**：
 
@@ -419,8 +427,8 @@ if (-not $Version) {
     $Version = Read-Host "Enter version (e.g., 0.10.0)"
 }
 cd ..
-# 排除 .git/ skills/ scripts/ —— 用户不需要这些维护者文件
-7z a -t7z -mx=9 "-xr!.git" "-xr!skills" "-xr!scripts" "Hermes-Agent-Portable-v$Version.7z" "Hermes-Agent-Portable\"
+# 排除维护者文件
+7z a -t7z -mx=9 "-xr!.git" "-xr!skills" "-xr!scripts" "-xr!update-hermes.bat" "-xr!update-upstream.ps1" "Hermes-Agent-Portable-v$Version.7z" "Hermes-Agent-Portable\"
 
 Write-Host "`n=== Done ===" -ForegroundColor Green
 ```

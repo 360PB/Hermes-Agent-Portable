@@ -448,7 +448,7 @@ def main() -> int:
     print(f"    python_runtime\\python.exe scripts\\pack.py")
     print(f"")
     print(f"  手动打包（排除 .git/ skills/ scripts/）:")
-    print(f"    7z a -t7z -mx=9 -xr!.git -xr!skills -xr!scripts Hermes-Agent-Portable-vX.Y.Z.7z Hermes-Agent-Portable\\")
+    print(f"    7z a -t7z -mx=9 -xr!.git -xr!skills -xr!scripts -xr!update-hermes.bat -xr!update-upstream.ps1 Hermes-Agent-Portable-vX.Y.Z.7z Hermes-Agent-Portable\\")
     print(f"")
     print(f"  PowerShell 打包（无 7z 时，较慢）:")
     print(f"    Compress-Archive -Path 'Hermes-Agent-Portable\\*' -DestinationPath 'Hermes-Agent-Portable-vX.Y.Z.zip' -Force")

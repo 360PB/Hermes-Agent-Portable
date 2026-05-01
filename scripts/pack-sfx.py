@@ -157,6 +157,8 @@ def create_7z_then_sfx(version: str, output_exe: Path) -> bool:
         "-xr!.git",
         "-xr!skills",
         "-xr!scripts",
+        "-xr!update-hermes.bat",
+        "-xr!update-upstream.ps1",
         str(temp_7z),
         f"{root.name}\\",
     ]
