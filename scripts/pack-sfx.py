@@ -102,7 +102,8 @@ ExtractDialogWidth=480
 GUIMode="1"
 InstallPath="D:\\\\Hermes-Agent-Portable"
 OverwriteMode="2"
-RunProgram="explorer.exe \"%T\""
+ExtractMode="1"
+RunProgram="nowait:explorer.exe %T"
 ;!@InstallEnd@!
 """
     config_path = output_path.parent / "_sfx_config.txt"
