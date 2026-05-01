@@ -157,8 +157,9 @@ def create_7z_then_sfx(version: str, output_exe: Path) -> bool:
         "-t7z",
         "-m0=lzma2", "-mx=9", "-mfb=64", "-md=32m", "-ms=on",
         "-xr!.git",
-        "-xr!skills",
-        "-xr!scripts",
+        # NOTE: 用 -x! 而非 -xr!，只排除根目录的 scripts，
+        # 避免误伤 venv\Lib\site-packages\anthropic\resources\beta\skills 等
+        "-x!scripts",
         "-xr!update-hermes.bat",
         "-xr!update-upstream.ps1",
         str(temp_7z),

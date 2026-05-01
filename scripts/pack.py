@@ -10,7 +10,6 @@ Hermes-Agent-Portable 一键打包脚本
 
 排除项:
     - .git/           # Git 历史，体积大且用户不需要
-    - skills/         # AI skill 文档，维护者专用
     - scripts/        # 打包/检查脚本，用户不需要
 """
 
@@ -109,8 +108,9 @@ def pack_7z(version: str, output_dir: Path) -> Path:
         "-t7z",
         "-m0=lzma2", "-mx=9", "-mfb=64", "-md=32m", "-ms=on",
         "-xr!.git",
-        "-xr!skills",
-        "-xr!scripts",
+        # NOTE: 用 -x! 而非 -xr!，只排除根目录的 scripts，
+        # 避免误伤 venv\Lib\site-packages\anthropic\resources\beta\skills 等
+        "-x!scripts",
         "-xr!update-hermes.bat",
         "-xr!update-upstream.ps1",
         str(output_file),
@@ -138,8 +138,8 @@ def pack_zip(version: str, output_dir: Path) -> Path:
         "-tzip",
         "-mx=9",
         "-xr!.git",
-        "-xr!skills",
-        "-xr!scripts",
+        # NOTE: 用 -x! 而非 -xr!，只排除根目录的 scripts
+        "-x!scripts",
         "-xr!update-hermes.bat",
         "-xr!update-upstream.ps1",
         str(output_file),
@@ -169,10 +169,17 @@ def pack_ps_zip(version: str, output_dir: Path) -> Path:
     temp_dir = Path(tempfile.mkdtemp(prefix="hermes-pack-"))
     temp_pack = temp_dir / root.name
 
-    print(f"{CYAN}=== 复制到临时目录（排除 skills/ scripts/ .git/）==={RESET}")
-    shutil.copytree(root, temp_pack, ignore=shutil.ignore_patterns(
-        ".git", "skills", "scripts"
-    ))
+    print(f"{CYAN}=== 复制到临时目录（排除根目录 scripts/ .git/）==={RESET}")
+
+    def _ignore_only_root(dir_path, contents):
+        """只排除根目录下的 scripts，保留子模块中的同名目录。"""
+        if Path(dir_path).resolve() == temp_pack.resolve():
+            return ["scripts", ".git"]
+        if ".git" in contents:
+            return [".git"]
+        return []
+
+    shutil.copytree(root, temp_pack, ignore=_ignore_only_root)
 
     print(f"{CYAN}=== PowerShell Compress-Archive ==={RESET}")
     ps_cmd = [
@@ -314,7 +321,7 @@ def main() -> int:
         print(f"  文件: {output_file}")
         print(f"  大小: {format_size(size)}")
         print(f"  格式: {args.format}")
-        print(f"  排除: .git/, skills/, scripts/, update-hermes.bat, update-upstream.ps1")
+        print(f"  排除: .git/, scripts/, update-hermes.bat, update-upstream.ps1")
         return 0
 
     except Exception as e:

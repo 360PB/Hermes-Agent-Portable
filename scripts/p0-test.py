@@ -147,6 +147,19 @@ class P0TestRunner:
         except Exception as exc:
             self._fail("pty_bridge fallback", exc)
 
+        # -- anthropic 包完整性检查（防止打包误排除 skills 子目录）------
+        self.section("P0: Dependency Integrity")
+        anthropic_skills = root / "venv" / "Lib" / "site-packages" / "anthropic" / "resources" / "beta" / "skills"
+        if anthropic_skills.exists() and anthropic_skills.is_dir():
+            self._ok(f"anthropic.resources.beta.skills 目录存在 ({anthropic_skills})")
+        else:
+            self._warn("anthropic.resources.beta.skills", f"目录不存在: {anthropic_skills}")
+
+        try:
+            self.check_import("anthropic")
+        except Exception:
+            pass  # anthropic 是可选依赖，导入失败只记 warning
+
         # -- 汇总 ------------------------------------------------------
         total = self.passed + self.failed + self.warnings
         print(f"\n{BOLD}{CYAN}=== P0 测试汇总 ==={RESET}")
