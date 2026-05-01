@@ -46,7 +46,7 @@ $agentUpdated = $false
 $webuiUpdated = $false
 
 # --- 更新 hermes-agent ---
-Write-Host "`n[1/4] Updating hermes-agent (branch: $AgentBranch) ..." -ForegroundColor Yellow
+Write-Host "`n[1/5] Updating hermes-agent (branch: $AgentBranch) ..." -ForegroundColor Yellow
 if (Test-Path hermes-agent\.git) {
     Push-Location hermes-agent
     try {
@@ -70,7 +70,7 @@ if (Test-Path hermes-agent\.git) {
 }
 
 # --- 更新 hermes-webui ---
-Write-Host "`n[2/4] Updating hermes-webui (branch: $WebUIBranch) ..." -ForegroundColor Yellow
+Write-Host "`n[2/5] Updating hermes-webui (branch: $WebUIBranch) ..." -ForegroundColor Yellow
 if (Test-Path hermes-webui\.git) {
     Push-Location hermes-webui
     try {
@@ -93,9 +93,55 @@ if (Test-Path hermes-webui\.git) {
     Write-Warning "   hermes-webui is not a git submodule. Skipped."
 }
 
+# --- 应用本地补丁 ---
+Write-Host "`n[3/5] Applying local patches ..." -ForegroundColor Yellow
+$patchesApplied = 0
+$patchesFailed = 0
+$patchesDir = Join-Path $root "patches"
+if (Test-Path $patchesDir) {
+    $patchFiles = Get-ChildItem -Path $patchesDir -Filter "*.patch" | Sort-Object Name
+    foreach ($patch in $patchFiles) {
+        $relPath = $patch.Name
+        # 判断 patch 目标子模块（默认 hermes-agent）
+        $targetSubdir = "hermes-agent"
+        if ($relPath -match "^webui-" -or $relPath -match "-webui\.") {
+            $targetSubdir = "hermes-webui"
+        }
+        $targetPath = Join-Path $root $targetSubdir
+        if (-not (Test-Path $targetPath)) {
+            Write-Warning "   $relPath -> target directory '$targetSubdir' not found, skip."
+            $patchesFailed++
+            continue
+        }
+        Push-Location $targetPath
+        try {
+            $result = git apply --check "../../patches/$relPath" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                git apply "../../patches/$relPath" 2>$null | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   $relPath -> $targetSubdir applied." -ForegroundColor Green
+                    $patchesApplied++
+                } else {
+                    Write-Warning "   $relPath -> $targetSubdir apply failed (git apply returned error)."
+                    $patchesFailed++
+                }
+            } else {
+                Write-Host "   $relPath -> already applied or incompatible, skip." -ForegroundColor Gray
+            }
+        } finally {
+            Pop-Location
+        }
+    }
+    if ($patchesApplied -eq 0 -and $patchesFailed -eq 0) {
+        Write-Host "   No patches to apply." -ForegroundColor Gray
+    }
+} else {
+    Write-Host "   patches/ directory not found, skip." -ForegroundColor Gray
+}
+
 # --- 记录指针到主仓库 ---
-if ($agentUpdated -or $webuiUpdated) {
-    Write-Host "`n[3/4] Recording submodule pointers in root repo ..." -ForegroundColor Yellow
+if ($agentUpdated -or $webuiUpdated -or $patchesApplied -gt 0) {
+    Write-Host "`n[4/5] Recording submodule pointers in root repo ..." -ForegroundColor Yellow
     if ($agentUpdated) { git add hermes-agent }
     if ($webuiUpdated) { git add hermes-webui }
 
@@ -107,19 +153,19 @@ if ($agentUpdated -or $webuiUpdated) {
     git commit -m "$msg" | Out-Null
     Write-Host "   Committed submodule pointer update." -ForegroundColor Green
 } else {
-    Write-Host "`n[3/4] No upstream changes, skip commit." -ForegroundColor Gray
+    Write-Host "`n[4/5] No upstream changes, skip commit." -ForegroundColor Gray
 }
 
 # --- 可选测试 ---
 if (-not $SkipTests) {
-    Write-Host "`n[4/4] Running quick tests ..." -ForegroundColor Yellow
+    Write-Host "`n[5/5] Running quick tests ..." -ForegroundColor Yellow
     if (Test-Path test-hermes.bat) {
         & .\test-hermes.bat
     } else {
         Write-Host "   test-hermes.bat not found, skip." -ForegroundColor Gray
     }
 } else {
-    Write-Host "`n[4/4] Skipped tests (-SkipTests)." -ForegroundColor Gray
+    Write-Host "`n[5/5] Skipped tests (-SkipTests)." -ForegroundColor Gray
 }
 
 Write-Host "`n=== Sync Complete ===" -ForegroundColor Cyan

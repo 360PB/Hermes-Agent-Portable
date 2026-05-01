@@ -277,10 +277,44 @@ Web UI frontend not built and npm is not available.
 
 **修复**：
 ```powershell
+# 方法 1: 使用 uv 安装到 venv（推荐，此便携包使用 uv 管理 Python）
+.\tools\uv.exe pip install --python .\python_runtime\python.exe --target .\venv\Lib\site-packages <package>
+
+# 方法 2: 如果有 requirements.txt
 .\python_runtime\python.exe -m pip install -r hermes-agent\requirements.txt
 ```
 
-### 问题 4：子模块指针未记录
+### 问题 4：上游代码破坏 Windows 兼容性
+
+**现象**：启动时报 `ModuleNotFoundError: No module named 'fcntl'` 或类似 Unix-only 模块错误。
+
+**原因**：上游新增代码直接导入了 Unix 特有模块（如 `fcntl`、`termios`、`resource`），没有 Windows 回退保护。
+
+**修复**：
+
+1. **定位问题文件**：
+   ```powershell
+   cd hermes-agent
+   grep -r "import fcntl" --include="*.py" .
+   ```
+
+2. **添加 try/except 保护**（遵循项目已有惯例）：
+   ```python
+   try:
+       import fcntl
+   except ImportError:
+       fcntl = None  # type: ignore
+   ```
+
+3. **保存为 patch**，放入 `patches/` 目录：
+   ```powershell
+   cd hermes-agent
+   git diff > ../patches/001-some-fix.patch
+   ```
+
+4. **更新脚本会自动应用 patches** —— `update-upstream.ps1` 在 `git pull` 后会自动执行 `git apply` 所有 `patches/*.patch`。
+
+### 问题 5：子模块指针未记录
 
 **现象**：更新后 `git status` 显示 `hermes-agent` 和 `hermes-webui` 有修改。
 
@@ -312,17 +346,35 @@ Set-Location $root
 Write-Host "=== Step 1: Sync upstream ===" -ForegroundColor Cyan
 cd hermes-agent; git pull origin main; cd ..
 cd hermes-webui; git pull origin main; cd ..
+
+Write-Host "`n=== Step 2: Apply local patches ===" -ForegroundColor Cyan
+Get-ChildItem -Path "patches" -Filter "*.patch" -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object {
+    $patchName = $_.Name
+    Push-Location hermes-agent
+    try {
+        git apply --check "../patches/$patchName" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            git apply "../patches/$patchName"
+            Write-Host "  Applied: $patchName" -ForegroundColor Green
+        } else {
+            Write-Host "  Already applied or skipped: $patchName" -ForegroundColor Gray
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 git add hermes-agent hermes-webui
 git commit -m "sync: bump upstream before release"
 
-Write-Host "`n=== Step 2: Pre-pack check ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 3: Pre-pack check ===" -ForegroundColor Cyan
 $check = python_runtime\python.exe scripts\pre-pack-check.py
 if ($LASTEXITCODE -eq 1) {
     Write-Error "Check failed, abort."
     exit 1
 }
 
-Write-Host "`n=== Step 3: Build web_dist if needed ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 4: Build web_dist if needed ===" -ForegroundColor Cyan
 if (-not (Test-Path hermes-agent\hermes_cli\web_dist\index.html)) {
     cd hermes-agent\web
     npm install
@@ -330,10 +382,10 @@ if (-not (Test-Path hermes-agent\hermes_cli\web_dist\index.html)) {
     cd ..\..
 }
 
-Write-Host "`n=== Step 4: Clean cache ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 5: Clean cache ===" -ForegroundColor Cyan
 Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 
-Write-Host "`n=== Step 5: Pack ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 6: Pack ===" -ForegroundColor Cyan
 if (-not $Version) {
     $Version = Read-Host "Enter version (e.g., 0.10.0)"
 }
@@ -362,12 +414,14 @@ Write-Host "`n=== Done ===" -ForegroundColor Green
 
 ## 参考文件
 
-| 文件 | 作用 |
-|------|------|
+| 文件/目录 | 作用 |
+|-----------|------|
 | `scripts/pre-pack-check.py` | 打包前自动化检查 |
 | `scripts/pack.py` | 一键打包（7z/zip） |
 | `scripts/pack-sfx.py` | 自解压 EXE 打包 |
-| `update-upstream.ps1` | 同步上游子模块 |
+| `update-upstream.ps1` | 同步上游子模块 + 自动应用 patches |
+| `update-hermes.bat` | `update-upstream.ps1` 的 Windows 入口 |
+| `patches/` | 本地补丁目录（`*.patch` 更新后自动应用） |
 | `hermes-agent/hermes_cli/main.py` | Dashboard 启动逻辑 |
 | `hermes-agent/web/package.json` | 前端依赖 |
 | `.gitmodules` | 子模块声明 |
