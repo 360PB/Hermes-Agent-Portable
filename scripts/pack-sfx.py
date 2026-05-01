@@ -36,6 +36,23 @@ def _root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def run_p0_test() -> bool:
+    """运行 P0 冒烟测试，返回是否通过。"""
+    p0_script = _root() / "scripts" / "p0-test.py"
+    if not p0_script.exists():
+        print(f"{YELLOW}[WARN]{RESET} p0-test.py 不存在，跳过 P0 测试")
+        return True
+
+    print(f"{CYAN}=== 运行 P0 冒烟测试 ==={RESET}\n")
+    result = subprocess.run(
+        [sys.executable, str(p0_script)],
+        cwd=_root(),
+        timeout=120,
+    )
+    print()
+    return result.returncode == 0
+
+
 def find_7z_sfx() -> Path | None:
     """查找 7z SFX 模块。"""
     candidates = [
@@ -174,6 +191,7 @@ def main() -> int:
     )
     parser.add_argument("-v", "--version", default="", help="版本号（默认自动检测）")
     parser.add_argument("--from-scratch", action="store_true", help="重新压缩并生成（而非使用现有 7z）")
+    parser.add_argument("--skip-p0", action="store_true", help="跳过 P0 冒烟测试")
     parser.add_argument("-o", "--output", default="", help="输出路径（默认整合包同级目录）")
     args = parser.parse_args()
 

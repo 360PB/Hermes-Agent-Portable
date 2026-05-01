@@ -56,6 +56,23 @@ def run_pre_check() -> bool:
     return result.returncode == 0
 
 
+def run_p0_test() -> bool:
+    """运行 P0 冒烟测试，返回是否通过。"""
+    p0_script = _root() / "scripts" / "p0-test.py"
+    if not p0_script.exists():
+        print(f"{YELLOW}[WARN]{RESET} p0-test.py 不存在，跳过 P0 测试")
+        return True
+
+    print(f"{CYAN}=== 运行 P0 冒烟测试 ==={RESET}\n")
+    result = subprocess.run(
+        [sys.executable, str(p0_script)],
+        cwd=_root(),
+        timeout=120,
+    )
+    print()
+    return result.returncode == 0
+
+
 def get_version_from_submodules() -> str:
     """从子模块提取版本号。"""
     root = _root()
@@ -203,6 +220,7 @@ def main() -> int:
   python scripts/pack.py -f zip           # zip 格式
   python scripts/pack.py --check-only     # 仅检查，不打包
   python scripts/pack.py --yes            # 自动确认版本号，无交互
+  python scripts/pack.py --skip-p0        # 跳过 P0 测试（不推荐）
 """,
     )
     parser.add_argument("-v", "--version", default="", help="版本号（默认从子模块自动检测）")
@@ -210,6 +228,7 @@ def main() -> int:
     parser.add_argument("-o", "--output", default="", help="输出目录（默认整合包同级目录）")
     parser.add_argument("--check-only", action="store_true", help="只运行检查，不打包")
     parser.add_argument("--skip-check", action="store_true", help="跳过打包前检查")
+    parser.add_argument("--skip-p0", action="store_true", help="跳过 P0 冒烟测试")
     parser.add_argument("-y", "--yes", action="store_true", help="自动确认版本号，跳过交互提示")
     args = parser.parse_args()
 
@@ -225,7 +244,7 @@ def main() -> int:
     print(f"排除项: .git/, skills/, scripts/")
     print()
 
-    # Step 1: 检查
+    # Step 1: 打包前检查
     if not args.skip_check:
         if not run_pre_check():
             print(f"{RED}{BOLD}[FAIL] 打包前检查未通过，请修复问题后再试。{RESET}")
@@ -237,7 +256,16 @@ def main() -> int:
     else:
         print(f"{YELLOW}[WARN] 已跳过打包前检查{RESET}\n")
 
-    # Step 2: 确定版本号
+    # Step 2: P0 冒烟测试
+    if not args.skip_p0:
+        if not run_p0_test():
+            print(f"{RED}{BOLD}[FAIL] P0 冒烟测试未通过，不能打包！{RESET}")
+            print(f"{YELLOW}  或使用 --skip-p0 强制跳过（不推荐）{RESET}")
+            return 1
+    else:
+        print(f"{YELLOW}[WARN] 已跳过 P0 冒烟测试{RESET}\n")
+
+    # Step 3: 确定版本号
     version = args.version
     if not version:
         version = get_version_from_submodules()

@@ -78,6 +78,25 @@ cd Hermes-Agent-Portable
 python_runtime\python.exe scripts\pre-pack-check.py
 ```
 
+### 步骤 3：P0 冒烟测试（打包前必做）
+
+确保核心模块能正常导入、Windows 兼容性补丁生效、关键依赖就位。
+
+```powershell
+cd Hermes-Agent-Portable
+python_runtime\python.exe scripts\p0-test.py
+```
+
+**P0 测试覆盖**：
+
+| 类别 | 检查项 |
+|------|--------|
+| Core Imports | hermes_cli, main, web_server, pty_bridge, agent, gateway, tools, cron |
+| New Dependencies | croniter 等上游新增依赖 |
+| WebUI | server.py 可导入 |
+| Key Deps | fastapi, pydantic, httpx, rich, yaml, starlette, prompt_toolkit |
+| Windows 兼容 | pty_bridge fcntl/termios fallback 生效 |
+
 **关键检查项**：
 
 | # | 检查项 | 失败后果 | 自动修复 |
@@ -91,10 +110,11 @@ python_runtime\python.exe scripts\pre-pack-check.py
 | 7 | Dashboard 源码修复 | `npm not available` | 否 |
 | 8 | Git 子模块状态 | 版本不可追溯 | 否 |
 | 9 | 残留备份/缓存 | 体积过大 | 是 |
+| 10 | P0 冒烟测试 | 打包后软件无法启动 | 否 |
 
 如果检查失败，先修复问题，再重新运行检查。
 
-### 步骤 3：构建 Dashboard 前端（如需）
+### 步骤 4：构建 Dashboard 前端（如需）
 
 如果检查项 6 失败，需要构建 web_dist：
 
@@ -107,7 +127,7 @@ npm run build
 
 构建完成后重新运行检查。
 
-### 步骤 4：确认 Dashboard 源码修复
+### 步骤 5：确认 Dashboard 源码修复
 
 如果检查项 7 失败，说明上游代码覆盖了 `cmd_dashboard` 的修复，需要重新添加：
 
@@ -139,7 +159,7 @@ def cmd_dashboard(args):
     )
 ```
 
-### 步骤 5：清理缓存
+### 步骤 6：清理缓存
 
 ```powershell
 cd Hermes-Agent-Portable
@@ -159,7 +179,7 @@ Remove-Item -Recurse -Force *.backup* -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force *.bak* -ErrorAction SilentlyContinue
 ```
 
-### 步骤 6：打包
+### 步骤 7：打包
 
 **一键打包（推荐）**：
 
@@ -227,7 +247,7 @@ Remove-Item -Recurse -Force $tempDir
 
 **建议**：优先使用 `scripts/pack.py` 一键脚本，自动处理所有细节。
 
-### 步骤 7：版本管理
+### 步骤 8：版本管理
 
 ```powershell
 cd Hermes-Agent-Portable
@@ -367,14 +387,23 @@ Get-ChildItem -Path "patches" -Filter "*.patch" -ErrorAction SilentlyContinue | 
 git add hermes-agent hermes-webui
 git commit -m "sync: bump upstream before release"
 
-Write-Host "`n=== Step 3: Pre-pack check ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 3: P0 smoke test ===" -ForegroundColor Cyan
+$env:PYTHONPATH = "$PWD\hermes-agent;$PWD\venv\Lib\site-packages"
+$env:PYTHONIOENCODING = "utf-8"
+$result = python_runtime\python.exe scripts\p0-test.py
+if ($LASTEXITCODE -eq 1) {
+    Write-Error "P0 test failed, abort."
+    exit 1
+}
+
+Write-Host "`n=== Step 4: Pre-pack check ===" -ForegroundColor Cyan
 $check = python_runtime\python.exe scripts\pre-pack-check.py
 if ($LASTEXITCODE -eq 1) {
     Write-Error "Check failed, abort."
     exit 1
 }
 
-Write-Host "`n=== Step 4: Build web_dist if needed ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 5: Build web_dist if needed ===" -ForegroundColor Cyan
 if (-not (Test-Path hermes-agent\hermes_cli\web_dist\index.html)) {
     cd hermes-agent\web
     npm install
@@ -382,10 +411,10 @@ if (-not (Test-Path hermes-agent\hermes_cli\web_dist\index.html)) {
     cd ..\..
 }
 
-Write-Host "`n=== Step 5: Clean cache ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 6: Clean cache ===" -ForegroundColor Cyan
 Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 
-Write-Host "`n=== Step 6: Pack ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 7: Pack ===" -ForegroundColor Cyan
 if (-not $Version) {
     $Version = Read-Host "Enter version (e.g., 0.10.0)"
 }
@@ -403,9 +432,10 @@ Write-Host "`n=== Done ===" -ForegroundColor Green
 发布前必须确认：
 
 - [ ] `pre-pack-check.py` 全部通过（0 失败）
+- [ ] `p0-test.py` 全部通过（0 失败）
 - [ ] `hermes ui.bat` 在新电脑能正常启动 Dashboard
 - [ ] `start-hermes.bat` 运行的是最新源码版本
-- [ ] `update-hermes.bat` 能正常同步上游
+- [ ] `update-hermes.bat` 能正常同步上游并自动应用 patches
 - [ ] 包体积合理（排除 .git 后 < 200 MB）
 - [ ] Git tag 已创建并推送
 - [ ] Release 说明已写（包含版本号和子模块 commit）
